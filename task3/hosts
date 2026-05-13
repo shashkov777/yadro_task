@@ -1,0 +1,9 @@
+[all:children]
+all_vm
+
+[all_vm:children]
+virtualbox
+
+[virtualbox]
+ubuntu24_srv01 ansible_user=user ansible_host=192.168.31.117
+ubuntu24_srv02 ansible_user=user ansible_host=192.168.31.133

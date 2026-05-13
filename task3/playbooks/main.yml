@@ -1,0 +1,20 @@
+---
+- name: Setup Docker, Run Script
+  gather_facts: true
+  hosts: all
+  become: true
+
+  pre_tasks:
+    - name: Verify that the host is a Debian-like distribution
+      assert:
+        that:
+          - ansible_os_family == "Debian"
+        fail_msg: "This playbook supports only Debian-like distributions. Found: {{ ansible_os_family | default('Unknown') }}"
+        success_msg: "ОС: {{ ansible_distribution }} {{ ansible_distribution_version }}. OK!"
+
+  roles:
+    - role: docker_install
+      tags: docker_install
+
+    - role: run_script
+      tags: run_script

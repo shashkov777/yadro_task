@@ -1,0 +1,58 @@
+---
+- name: Ensure /tmp/script/ exists
+  file:
+    path: /tmp/script/
+    state: directory
+    mode: '0755'
+
+- name: Copy Dockerfile and script to host
+  copy:
+    src: "{{ item }}"
+    dest: /tmp/script/
+    owner: "{{ ansible_user }}"
+    mode: '0644'
+  loop:
+    - Dockerfile
+    - script.py
+
+- name: Build Docker image
+  command:
+    cmd: docker build -t python-requests /tmp/script/
+  register: build
+  failed_when: build.rc != 0
+  changed_when: "'Successfully built' in build.stdout or 'naming to' in build.stdout"
+
+- name: Remove previous container if exists
+  shell: docker rm -f python-requests || true
+  changed_when: false
+
+- name: Run Docker container with script
+  command:
+    cmd: docker run -d --name python-requests python-requests
+  register: run
+  failed_when: run.rc != 0
+  changed_when: true
+
+- name: Wait for container to finish work
+  command:
+    cmd: docker wait python-requests
+  register: wait
+  changed_when: false
+
+- name: Check execution code for fail
+  fail:
+    msg: "FAILURE! Script exited with code {{ wait.stdout }}."
+  when: wait.stdout != "0"
+
+- name: Fetch docker logs
+  command:
+    cmd: docker logs python-requests
+  register: logs
+  changed_when: false
+
+- name: Print script execution logs
+  debug:
+    msg: 
+      - "--- CONTAINER LOGS ---"
+      - "{{ logs.stdout_lines }}"
+      - "{{ logs.stderr_lines }}"
